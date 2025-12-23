@@ -33,7 +33,7 @@ a:hover{text-decoration:underline}
 input,select,button{font:inherit}
 input,select{
   background:#0e1630;color:var(--text); border:1px solid var(--border);
-  padding:10px 12px;border-radius:12px; outline:none}
+  padding:10px 12px;border-radius:12px; outline:none; margin: 10px 0;}
 input:focus,select:focus{border-color:rgba(110,168,254,.6)}
 button{
   background:var(--accent);color:#081026;border:0; padding:10px 14px;border-radius:12px;
@@ -73,6 +73,16 @@ li {
 form {
     display: flex;
     flex-direction: column;
+}
+.table-block {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    text-align: left;
+    align-items: baseline;
+    background: #0e1630;
+    padding: 10px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
 }
 """
 def page(title: str, body_html: str) -> str:
@@ -608,7 +618,7 @@ def car_jobs(car_id: int):
 
     today = date.today()
     # HTML для напоминаний
-    reminders_html = '<div class="card"><h2>Напоминания (ТО)</h2>'
+    reminders_html = '<div class="grid grid-2"><div class="card"><h2>Напоминания (ТО)</h2>'
 
     reminders_html += f"<p><b>Текущий пробег:</b> {current_mileage} км</p>"
 
@@ -625,11 +635,12 @@ def car_jobs(car_id: int):
       <button type="submit">Добавить напоминание</button>
     </form>
     """.format(car_id=car_id, current_mileage=current_mileage, today_str=today_str)
+    reminders_html += '</div>'
 
     if not reminders:
-        reminders_html += "<p><i>Пока нет напоминаний.</i></p>"
+        reminders_html += '<div class="card"><p><i>Пока нет напоминаний.</i></p></div>'
     else:
-        reminders_html += "<ul>"
+        reminders_html += '<div class="card"><ul>'
         for rid, title, interval_km, interval_days, last_mileage, last_date, is_active in reminders:
             next_km = None
             next_dt = None
@@ -663,7 +674,7 @@ def car_jobs(car_id: int):
             active_txt = "" if is_active else " (выключено)"
 
             reminders_html += (
-                f"<li>{status} <b>{escape(title)}</b>{active_txt} — "
+                f'<li class="table-block"><b>{status}{escape(title)}</b>{active_txt} — '
                 + "; ".join(hints)
                 + f"""
                 <form method="POST" action="/reminders/{rid}/done" style="display:inline;margin-left:8px;">
@@ -679,15 +690,15 @@ def car_jobs(car_id: int):
                 + "</li>"
             )
         reminders_html += "</ul>"
-
-    reminders_html += '</div>'
+        reminders_html += '</div>'
 
     html = f"""
     <a href="/">← назад</a>
     <h1>Работы: {escape(car[1])}</h1>
     
     {reminders_html}
-
+    
+    <div class="card">
     <h2>Поиск и фильтры (только для этого авто)</h2>
     <form method="GET" action="/cars/{car_id}">
       <input name="q" placeholder="Поиск по описанию" value="{qv}">
@@ -713,7 +724,9 @@ def car_jobs(car_id: int):
       <b>Запчасти:</b> {parts} ₽ |
       <b>Работа:</b> {works} ₽
     </p>
+    </div>
 
+    <div class="card">
     <h2>Добавить работу для этого авто</h2>
     <form method="POST" action="/add_job">
       <input type="hidden" name="car_id" value="{car_id}">
@@ -726,8 +739,11 @@ def car_jobs(car_id: int):
       <input name="cost" placeholder="Стоимость (₽)" type="number" value="0">
       <button type="submit">Добавить</button>
     </form>
+    </div>
+    </div>
 
-    <hr>
+    <div class="grid total">
+    <div class="card">
     <h2>История</h2>
     <ul>
     """
@@ -745,7 +761,7 @@ def car_jobs(car_id: int):
             f"</li>"
         )
 
-    html += "</ul>"
+    html += "</ul></div></div></div>"
     return page(f"Авто: {car[1]}", html)
 
 
