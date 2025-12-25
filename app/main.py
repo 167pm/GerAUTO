@@ -13,14 +13,14 @@ app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "dev-secret-change-me")
 
 CAR_IMAGES = {
-    "bmw_x1": ("/static/cars/bmw_x1.jpg", "BMW X1"),
+    "bmw_x1": ("/static/cars/bmw_x1.png", "BMW X1"),
     "bmw_x3": ("/static/cars/bmw_x3.png", "BMW X3"),
-    "ford_focus": ("/static/cars/ford_focus.jpeg", "Ford Focus"),
-    "mitsubishi_outlander": ("/static/cars/mitsubishi_outlander.jpg", "Mitsubishi Outlander"),
-    "lada_granta": ("/static/cars/lada_granta.jpg", "Lada Granta"),
+    "ford_focus": ("/static/cars/ford_focus.png", "Ford Focus"),
+    "mitsubishi_outlander": ("/static/cars/mitsubishi_outlander.png", "Mitsubishi Outlander"),
+    "lada_granta": ("/static/cars/lada_granta.png", "Lada Granta"),
 }
 
-DEFAULT_CAR_IMAGE = "/static/cars/default.jpg"  # можешь добавить заглушку
+DEFAULT_CAR_IMAGE = "/static/cars/default.png"  # можешь добавить заглушку
 
 
 BASE_CSS = """
@@ -58,8 +58,10 @@ body{
     background-position: center, center, center, center;
     background-repeat: no-repeat;
     background-attachment: fixed;
-    height: 100vh;
-    display: flex;
+    width: 100%;
+    overflow-x: hidden;
+    min-height: 100vh;
+    display: block; /* важно! */
 }
 
 .login {
@@ -78,7 +80,7 @@ a{color:var(--accent);text-decoration:none}
 a:hover{text-decoration:underline}
 
 /* Layout */
-.container{max-width:980px;margin:0 auto;padding:24px}
+.container{max-width:980px;margin:0 auto;padding:24px;height:100vh;}
 .topbar{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:18px}
 
 .h1{
@@ -89,8 +91,58 @@ a:hover{text-decoration:underline}
   text-shadow:0 10px 35px rgba(0,0,0,.55);
 }
 
-.grid{display:grid;gap:14px}
-@media (min-width:900px){.grid-2{grid-template-columns:1.1fr .9fr}}
+.grid{
+  display:grid;
+  gap:14px;
+  width: 100%;
+  max-width: 100%;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+/* ===== Cars grid ===== */
+.cars-grid{
+  display:grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr)); /* 2 в ряд */
+  gap: 12px;
+  width: 100%;
+  max-width: 100%;
+}
+
+/* карточка авто квадратная */
+.cars-grid a.card{
+  display:flex;
+  flex-direction:column;
+  padding: 12px;
+  aspect-ratio: 1 / 1;  /* квадрат */
+}
+
+/* фото занимает верх */
+.cars-grid .cars-photo{
+  flex: 1;
+  max-width: 100%;
+  border-radius: 12px;
+}
+
+/* картинка строго в контейнер */
+.cars-grid .cars-photo img{
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display:block;
+}
+
+/* на больших экранах можно 3 в ряд */
+@media (min-width: 900px){
+  .cars-grid{
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width:900px){
+  .grid-2{
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, .9fr);
+  }
+}
 
 .muted{color:var(--muted);font-size:13px}
 .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
@@ -296,7 +348,6 @@ li small{color: rgba(184,175,163,.75)}
   background: rgba(255,255,255,.04);
   overflow:hidden;
   justify-content: center;
-  background: #fff;
 }
 
 /* Hover for car cards (у тебя a.card glass) */
@@ -320,8 +371,10 @@ table{
   background: rgba(0,0,0,.18);
 }
 th,td{
-  border-bottom: 1px solid rgba(255,255,255,.08);
-  padding: 10px 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, .08);
+    /* padding: 10px 12px; */
+    width: 50%;
+    text-align: center;
 }
 th{
   color: rgba(238,232,223,.75);
@@ -365,7 +418,7 @@ tr:last-child td{border-bottom:none}
 @media (max-width: 640px){
 
   .login {
-    width: 300px;
+    width: 100%;
   }
   .container{
     padding: 14px;
@@ -383,14 +436,15 @@ tr:last-child td{border-bottom:none}
 
   /* Сетка: в одну колонку */
   .grid-2{
-    grid-template-columns: 1fr !important;
+    grid-template-columns: minmax(0, 1fr) !important;
   }
 
   /* Карточки: меньше радиус/паддинги */
   .card{
     padding: 14px;
     border-radius: 16px;
-    width: 95%;
+    width: auto;
+    max-width: 100%;
   }
   
   .card-total {
@@ -405,7 +459,7 @@ tr:last-child td{border-bottom:none}
 
   /* Картинка в авто: адаптивная высота */
   .cars-photo{
-    height: 140px; /* можно 130–160 */
+    height: 140px !important; /* можно 130–160 */
   }
   .cars-photo img{
     width: 100% !important;
@@ -709,14 +763,14 @@ def render_index_page(cars, rows, summary_rows, errors=None, form=None):
         selected = "selected" if str(car_id) == str(form.get("car_id")) else ""
         cars_options += f'<option value="{car_id}" {selected}>{escape(title)}</option>'
 
-    cars_cards = '<div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px">'
+    cars_cards = '<div class="cars-grid">'
     for car_id, title, image_key in cars:
         img = CAR_IMAGES.get(image_key, (DEFAULT_CAR_IMAGE, title))[0] if image_key else DEFAULT_CAR_IMAGE
         cars_cards += f"""
         <a class="card glass" href="/cars/{car_id}" style="display:block">
           <div class="cars-photo">
               <img src="{img}" alt="{escape(title)}"
-                   style="height:100%;object-fit:cover;border-radius:12px;border:1px solid rgba(255,255,255,.10);">
+                   style="width:100%;height:100%;object-fit:cover;border-radius:12px;border:1px solid rgba(255,255,255,.10);display:block;">
           </div>     
           <div style="margin-top:10px;font-weight:800">{escape(title)}</div>
           <div class="muted small">Открыть журнал</div>
@@ -752,6 +806,7 @@ def render_index_page(cars, rows, summary_rows, errors=None, form=None):
     category = (form or {}).get("category", "work")
     work_sel = "selected" if category == "work" else ""
     part_sel = "selected" if category == "part" else ""
+    fuel_sel = "selected" if category == "fuel" else ""
 
     car_select = '<select name="image_key" required>'
     car_select += '<option value="" disabled selected>— выбери автомобиль —</option>'
@@ -780,6 +835,7 @@ def render_index_page(cars, rows, summary_rows, errors=None, form=None):
           <select name="category" required>
             <option value="work" {work_sel}>Работа</option>
             <option value="part" {part_sel}>Запчасть</option>
+            <option value="fuel" {fuel_sel}>Топливо</option>
           </select>
     
           <input name="mileage" placeholder="Пробег" type="number" required value="{val(form or {}, 'mileage')}">
@@ -804,7 +860,9 @@ def render_index_page(cars, rows, summary_rows, errors=None, form=None):
     
     <div class="card glass">  
         <h2>Сводка по вложениям</h2>
-        {summary_html}
+        <div class="table-wrap">
+            {summary_html}
+        </div>
     </div>
     </div>
     
@@ -836,8 +894,8 @@ def register_form():
       <div class="card glass">
         <h2>Регистрация</h2>
         <form method="POST" action="/register">
-          <input name="username" placeholder="Логин" required>
-          <input name="password" placeholder="Пароль" type="password" required>
+          <input name="username" autocomplete="username" placeholder="Логин" required>
+          <input name="password" autocomplete="current-password" placeholder="Пароль" type="password" required>
           <button type="submit">Создать аккаунт</button>
         </form>
         <p class="muted">Уже есть аккаунт? <a href="/login">Войти</a></p>
@@ -879,8 +937,8 @@ def login_form():
           <div class="card glass logs">
             <h2>Вход</h2>
             <form method="POST" action="/login">
-              <input name="username" placeholder="Логин" required>
-              <input name="password" placeholder="Пароль" type="password" required>
+          <input name="username" autocomplete="username" placeholder="Логин" required>
+          <input name="password" autocomplete="current-password" placeholder="Пароль" type="password" required>
               <button type="submit">Войти</button>
             </form>
             <p class="muted">Нет аккаунта? <a href="/register">Регистрация</a></p>
@@ -1266,7 +1324,8 @@ def car_jobs(car_id: int):
 
     work_sel = "selected" if category == "work" else ""
     part_sel = "selected" if category == "part" else ""
-    all_sel = "selected" if category not in ("work", "part") else ""
+    fuel_sel = "selected" if category == "fuel" else ""
+    all_sel = "selected" if category not in ("work", "part", "fuel") else ""
 
     today = date.today()
     # HTML для напоминаний
@@ -1371,6 +1430,7 @@ def car_jobs(car_id: int):
         <option value="" {all_sel}>Все категории</option>
         <option value="work" {work_sel}>Работа</option>
         <option value="part" {part_sel}>Запчасть</option>
+        <option value="fuel" {fuel_sel}>Топливо</option>
       </select>
 
       <input name="m_from" placeholder="Пробег от" type="number" value="{m_from_v}">
@@ -1461,6 +1521,7 @@ def edit_job_form(job_id: int):
 
     work_selected = "selected" if category == "work" else ""
     part_selected = "selected" if category == "part" else ""
+    fuel_selected = "selected" if category == "fuel" else ""
 
     return page("Редактировать запись", f"""
       <div class="header">
@@ -1480,6 +1541,7 @@ def edit_job_form(job_id: int):
           <select name="category" required>
             <option value="work" {work_selected}>Работа</option>
             <option value="part" {part_selected}>Запчасть</option>
+            <option value="fuel" {fuel_selected}>Топливо</option>
           </select>
 
           <input name="mileage" placeholder="Пробег" type="number" required value="{mileage}">
